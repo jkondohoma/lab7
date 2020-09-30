@@ -1,0 +1,279 @@
+\documentclass[12pt]{exam}
+%\printanswers
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{.25cm}
+
+\usepackage{graphicx}
+
+\usepackage{xcolor}
+
+\definecolor{darkred}{rgb}{0.5,0,0}
+\definecolor{darkgreen}{rgb}{0,0.5,0}
+\usepackage{hyperref}
+\hypersetup{
+  letterpaper,
+  colorlinks,
+  linkcolor=red,
+  citecolor=darkgreen,
+  menucolor=darkred,
+  urlcolor=blue,
+  pdfpagemode=none,
+  pdftitle={CSCE 156 Lab Handout},
+  pdfauthor={Christopher M. Bourke},
+  pdfsubject={},
+  pdfkeywords={}
+}
+
+\definecolor{MyDarkBlue}{rgb}{0,0.08,0.45}
+\definecolor{MyDarkRed}{rgb}{0.45,0.08,0}
+\definecolor{MyDarkGreen}{rgb}{0.08,0.45,0.08}
+
+\definecolor{mintedBackground}{rgb}{0.95,0.95,0.95}
+\definecolor{mintedInlineBackground}{rgb}{.90,.90,1}
+
+%\usepackage{newfloat}
+\usepackage[newfloat=true]{minted}
+\setminted{mathescape,
+               linenos,
+               autogobble,
+               frame=none,
+               framesep=2mm,
+               framerule=0.4pt,
+               %label=foo,
+               xleftmargin=2em,
+               xrightmargin=0em,
+               startinline=true,  %PHP only, allow it to omit the PHP Tags *** with this option, variables using dollar sign in comments are treated as latex math
+               numbersep=10pt, %gap between line numbers and start of line
+               style=default, %syntax highlighting style, default is "default"
+               			    %gallery: http://help.farbox.com/pygments.html
+			    	    %list available: pygmentize -L styles
+               bgcolor=mintedBackground} %prevents breaking across pages
+               
+\setmintedinline{bgcolor={mintedBackground}}
+\setminted[text]{bgcolor={mintedBackground},linenos=false,autogobble,xleftmargin=1em}
+%\setminted[php]{bgcolor=mintedBackgroundPHP} %startinline=True}
+\SetupFloatingEnvironment{listing}{name=Code Sample}
+\SetupFloatingEnvironment{listing}{listname=List of Code Samples}
+
+\title{CSCE 156 -- Computer Science II \\
+{\large Lab 7.0 - SQL I - Worksheet}}
+%\subtitle{Lab 07 - SQL I - Worksheet}
+\author{~}
+\date{~}
+
+\begin{document}
+
+\maketitle
+
+{\Large Names \underline{\hspace*{5cm}}}
+
+For each question, write an SQL query to get the specified result.  You are highly 
+encouraged to use a GUI SQL tool such as MySQL Workbench and keep track of your 
+queries in an SQL script so that lab instructors can verify your work.  If you do, 
+write your queries in the script file provided rather than hand-writing your queries 
+here.
+
+\fullwidth{\section*{Simple Queries}}
+
+\begin{questions}
+
+\question List all albums in the database.
+\begin{solution}
+
+\begin{minted}{sql}
+select * from Album;
+\end{minted}
+\end{solution}
+
+\question List all albums in the database from newest to oldest.
+\begin{solution}
+
+\begin{minted}{sql}
+select * from Album order by year desc;
+\end{minted}
+\end{solution}
+
+\question List all bands in the database that begin with ``The''.
+\begin{solution}
+
+\begin{minted}{sql}
+select * from Band where name like 'The%';
+\end{minted}
+\end{solution}
+
+\question List all songs in the database in alphabetic order.
+\begin{solution}
+
+\begin{minted}{sql}
+select * from Song order by title asc;
+\end{minted}
+\end{solution}
+
+\question Write a query that gives just the \mintinline{sql}{albumId} of the
+album ``Nevermind''.
+\begin{solution}
+
+\begin{minted}{sql}
+select albumId from Album where title = 'Nevermind';
+\end{minted}
+\end{solution}
+
+\fullwidth{\section*{Simple Aggregate Queries}}
+
+\question Write a query to determine how many musicians are in the database.
+\begin{solution}
+
+\begin{minted}{sql}
+select count(*) as numMusicians from Musician;
+\end{minted}
+\end{solution}
+
+\question Write a (nested) query to list the oldest album(s) in the database.
+\begin{solution}
+
+\begin{minted}{sql}
+select * from Album where year = (select min(year) from Album);
+\end{minted}
+\end{solution}
+
+\question Write a query to find the total running time (in seconds) of all 
+tracks on the album \emph{Rain Dogs} by Tom Waits
+
+\begin{solution}
+
+\begin{minted}{sql}
+select sum(trackLength) from AlbumSong 
+  where albumId = (select albumId from Album where title = 'Rain Dogs');
+\end{minted}
+\end{solution}
+
+\fullwidth{\section*{Join Queries}}
+
+\question Write a query list all albums in the database along with the album's
+band, but only include the album title, year and band name.
+
+\begin{solution}
+
+\begin{minted}{sql}
+select a.title, a.year, b.name from Album a 
+  join Band b on a.bandId = b.bandId;
+\end{minted}
+\end{solution}
+
+\question Write a query that lists all albums and all tracks on the albums for the
+band Nirvana.
+
+\begin{solution}
+
+\begin{minted}{sql}
+select * from Band b
+  join Album a on b.bandId = a.bandId
+  join AlbumSong t on t.albumId = a.albumId
+  join Song s on s.songId = t.songId
+  where b.name = 'Nirvana'
+  order by a.title asc, t.trackNumber asc;
+\end{minted}
+\end{solution}
+
+\question Write a query that list all bands along with all their albums in the
+database \emph{even if they do not have any}.
+
+\begin{solution}
+
+\begin{minted}{sql}
+select b.name, a.title, a.year from Band b
+  left join Album a on a.bandId = b.bandId;
+\end{minted}
+\end{solution}
+
+
+
+\fullwidth{\section*{Grouped Join Queries}}
+
+\question Write a query list all bands along with a \emph{count} of how many
+albums they have in the database (as you saw in the previous query, some should
+have zero).
+
+\begin{solution}
+
+\begin{minted}{sql}
+select b.name, count(albumId) from Band b
+  left join Album a on a.bandId = b.bandId
+  group by b.bandId;
+\end{minted}
+\end{solution}
+
+\question Write a query that lists all albums in the database along with the
+number of tracks on them.
+
+\begin{solution}
+
+\begin{minted}{sql}
+select a.title,count(t.albumSongId) from Album a
+  join AlbumSong t on t.albumId = a.albumId
+  group by a.albumId;
+\end{minted}
+\end{solution}
+
+\question Write the same query, but limit it to albums which have 12 or more 
+tracks on them.
+
+\begin{solution}
+
+\begin{minted}{sql}
+select a.title,count(t.albumSongId) as numTracks from Album a
+  join AlbumSong t on t.albumId = a.albumId
+  group by a.albumId
+  having numTracks >= 12;
+\end{minted}
+\end{solution}
+
+
+\question Write a query to find all musicians that are not in any bands.
+
+\begin{solution}
+
+\begin{minted}{sql}
+select m.firstName,m.lastName from Musician m
+  left join BandMember bm on bm.musicianId = m.musicianId
+  where bm.bandMusicianId is null;
+\end{minted}
+\end{solution}
+
+\question Write a query to find all musicians that are in more than one band.
+
+\begin{solution}
+
+\begin{minted}{sql}
+select m.firstName,m.lastName,count(bandMusicianId) as numBands from Musician m
+  left join BandMember bm on bm.musicianId = m.musicianId
+  having numBands > 1;
+\end{minted}
+\end{solution}
+
+
+
+\end{questions}
+
+
+\section*{Advanced Activities}
+
+\begin{enumerate}
+  \item SQL supports basic arithmetic operations (\mintinline{sql}{+, -, /, *, %}) 
+        in its queries.  Design an SQL query that calculates the total running 
+        time for a particular album (identified by AlbumID) by selecting two 
+        columns: minutes and seconds which both should be whole integers.  Then 
+        create a query that returns the running time as a string in the format, 
+        ``mm:ss'' (hint/warning: string formatting is specific to particular 
+        databases and is not standard SQL; for MySQL see the \mintinline{sql}{LPAD} 
+        and \mintinline{sql}{CONCAT} functions).
+  \item Read up on the syntax for creating a view--a stored query that creates a 
+        virtual table that can be queried as if it were an actual table in the 
+        database.  Create a view in your album database to ``flatten'' the album 
+        and song data into one accessible table; include the following columns: 
+        \mintinline{sql}{albumId, albumTitle, bandId, trackNumber, songId, songTitle}.
+\end{enumerate}
+
+
+\end{document}
